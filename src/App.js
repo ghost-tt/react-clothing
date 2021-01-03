@@ -11,22 +11,17 @@ import SignInAndSignUp from './components/signinandsignup/signinandsignup';
 import Header from './components/header/header';
 import CheckOutPage from './components/checkout/checkout';
 
-import { auth, createUserProfileDocument } from './firebase/firebase';
+import { auth, createUserProfileDocument, addCollectionAndDocuments } from './firebase/firebase';
 import { setCurrentUser } from './redux/user/user.actions';
 import { selectCurrentUser } from './redux/user/user.selector';
+import { selectCollectionsForPreview } from './redux/shop/shop.selector';
+
 class App extends React.Component {
-  /* no need as we are now getting user from redux */
-  /* constructor(props) {
-    super(props);
-    this.state = {
-      currentUser: null
-    }
-  } */
 
   unsubscribeFromAuth = null
 
   componentDidMount() {
-    const { setCurrentUser } = this.props;
+    const { setCurrentUser, collectionArray } = this.props;
     this.unsubscribeFromAuth = auth.onAuthStateChanged(async userAuth => {
       if(userAuth) {
         const userRef = await createUserProfileDocument(userAuth);
@@ -38,6 +33,7 @@ class App extends React.Component {
         });
       }
       setCurrentUser(userAuth);
+      addCollectionAndDocuments('collections', collectionArray.map(({title, items}) => ({title, items})));
     })
   }
 
@@ -53,7 +49,6 @@ class App extends React.Component {
           <Route exact path="/" component={HomePage} />
           <Route path="/shop" component={ShopPage} />
           <Route exact path="/checkout" component={CheckOutPage} />
-          {/* <Route exact path="/signin" component={SignInAndSignUp} /> */}
           <Route exact path="/signin" render={() => this.props.currentUser ? <Redirect to="/" /> : <SignInAndSignUp />} />
         </Switch>
       </div>
@@ -62,7 +57,8 @@ class App extends React.Component {
 }
 
 const mapStateToProps = createStructuredSelector({
-    currentUser: selectCurrentUser
+    currentUser: selectCurrentUser,
+    collectionArray: selectCollectionsForPreview
 })
 
 const mapDispatchToProps = (dispatch) => {
